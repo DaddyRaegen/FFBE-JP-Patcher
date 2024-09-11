@@ -6,7 +6,6 @@ FFBE Patcher is a tool designed to patch the Japanese PC version of Final Fantas
 
 - **Automated Patching**: Easily apply patches to FFBE with a simple user interface.
 - **Update Checking**: Automatically checks for the latest software updates to ensure you have the most current version.
-- **Custom Patches**: Support for custom patch functionalities tailored for different versions of the game.
 
 ## Getting Started
 
@@ -16,7 +15,6 @@ To start using FFBE Patcher, simply download the latest installer from the [Rele
 
 Make sure your system meets the following requirements:
 - Operating System: Windows 7 or later.
-- Administrator privileges might be required for installation.
 
 ## Building the Project
 
@@ -34,8 +32,23 @@ Ensure you have the following installed:
 
 ```bash
 git clone https://github.com/DaddyRaegen/FFBE-JP-Patcher.git
-cd ffbe-patcher ```
+cd ffbe-patcher 
+```
 
-#### Install the Dependencies
+#### Install the Dependencies:
 
-```bas
+```bash
+flutter pub get
+```
+
+#### Run the app:
+
+```bash
+flutter run
+```
+
+#### Build the app:
+
+```bash
+flutter build windows
+```
