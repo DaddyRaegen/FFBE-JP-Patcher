@@ -16,7 +16,6 @@ To start using FFBE Patcher, simply download the latest installer from the [Rele
 
 Make sure your system meets the following requirements:
 - Operating System: Windows 7 or later.
-- Administrator privileges might be required for installation.
 
 ## Building the Project
 
@@ -34,8 +33,23 @@ Ensure you have the following installed:
 
 ```bash
 git clone https://github.com/DaddyRaegen/FFBE-JP-Patcher.git
-cd ffbe-patcher ```
+cd ffbe-patcher 
+```
 
-#### Install the Dependencies
+#### Install the Dependencies:
 
-```bas
+```bash
+flutter pub get
+```
+
+#### Run the app:
+
+```bash
+flutter run
+```
+
+#### Build the app:
+
+```bash
+flutter build windows
+```
