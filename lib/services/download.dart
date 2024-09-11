@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
-import 'package:url_launcher/url_launcher_string.dart';
 
 void downloadAndReplaceFilesWithProgress(
   String baseUrl,
@@ -95,21 +94,16 @@ Future<String?> findGameFolder() async {
 
   Future<void> downloadAndUpdate(String url) async {
     var tempDir = Directory.systemTemp;
-    var filePath = '${tempDir.path}/FFBE_Patcher_Update.exe';
+    var filePath = '${tempDir.path}\\FFBE_Patcher_Update.exe';
 
     try {
       Response response = await Dio().download(url, filePath);
       if (response.statusCode == 200) {
-        if (await canLaunchUrlString(filePath)) {
-          await launchUrlString(filePath);
-          exit(0);
-        } else {
-          throw 'Could not launch $filePath';
-        }
-      } else {
-        throw 'Failed to download file';
+        await Process.start('cmd.exe', ['/c', filePath]);
+        exit(0);
       }
-    } catch (e) {
+    } 
+    catch (e) {
       print('Error updating: $e');
     }
   }
