@@ -6,7 +6,6 @@ FFBE Patcher is a tool designed to patch the Japanese PC version of Final Fantas
 
 - **Automated Patching**: Easily apply patches to FFBE with a simple user interface.
 - **Update Checking**: Automatically checks for the latest software updates to ensure you have the most current version.
-- **Custom Patches**: Support for custom patch functionalities tailored for different versions of the game.
 
 ## Getting Started
 
