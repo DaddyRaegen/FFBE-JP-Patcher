@@ -1,1 +1,1 @@
-int appVersion = 1;
+int appVersion = 2;

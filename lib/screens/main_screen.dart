@@ -14,6 +14,7 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   Data data = Data();
   String? path;
+  String? otherPath;
   Map<String, double> downloadProgress = {};
 
   @override
@@ -25,18 +26,22 @@ class _MainScreenState extends State<MainScreen> {
   getData() async {
     Data updatedData = await fetchData();
     String? updatedPath = await findGameFolder();
+    String? otherUpdatedPath = await findCpkFolder("FF_EXVIUS.exe");
     setState(() {
       data = updatedData;
       path = updatedPath;
+      otherPath = otherUpdatedPath;
     });
   }
 
-  downloadFile(String baseUrl, List<String>? files, String eventName) {
+  downloadFile({required String baseUrl, required List<String> files, List<String>? otherFiles, required eventName}) {
     downloadAndReplaceFilesWithProgress(
-      baseUrl,
-      files!,
-      path!,
-      (progress) {
+      baseUrl: baseUrl,
+      fileNames: files,
+      targetDirectory: path!,
+      otherFileNames: otherFiles,
+      otherTargetDirectory: otherPath,
+      onProgressUpdate: (progress) {
         setState(() {
           downloadProgress[eventName] = progress;
         });
@@ -99,6 +104,13 @@ class _MainScreenState extends State<MainScreen> {
         actions: [
           IconButton(
             onPressed: (){
+              getData();
+            },
+            icon: const Icon(Icons.move_to_inbox),
+            tooltip: "Refresh Data",
+          ),
+          IconButton(
+            onPressed: (){
               showAboutDialog(
                 context: context,
                 applicationName: "FFBE Patcher",
@@ -106,12 +118,14 @@ class _MainScreenState extends State<MainScreen> {
               );
             }, 
             icon: const Icon(Icons.info),
+            tooltip: "App Info",
           ),
           IconButton(
             onPressed: (){
               checkForUpdate(data.version!, data.updateUrl!);
             },
             icon: const Icon(Icons.update),
+            tooltip: "Check For Update",
           ),
           const SizedBox(width: 10)
         ],
@@ -146,7 +160,12 @@ class _MainScreenState extends State<MainScreen> {
                             TextButton(
                               onPressed: () {
                                 Navigator.pop(context);
-                                downloadFile("${data.events![index].url}", data.events![index].files, data.events![index].name!);
+                                downloadFile(
+                                  baseUrl: "${data.events![index].url}",
+                                  otherFiles: data.events![index].payloadFiles, 
+                                  files: data.events![index].files!, 
+                                  eventName: data.events![index].name!,
+                                );
                               },
                               child: const Text('Yes'),
                             ),

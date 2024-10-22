@@ -32,14 +32,19 @@ class Events {
   String? url;
   String? banner;
   List<String>? files;
+  List<String>? payloadFiles;
 
-  Events({this.name, this.url, this.banner, this.files});
+  Events({this.name, this.url, this.banner, this.files, this.payloadFiles});
 
   Events.fromJson(Map<String, dynamic> json) {
     name = json['name'];
     url = json['url'];
     banner = json['banner'];
     files = json['files'].cast<String>();
+    if (json['payload_files'] != null){
+      payloadFiles = json['payload_files'].cast<String>();
+    }
+    
   }
 
   Map<String, dynamic> toJson() {
@@ -48,6 +53,7 @@ class Events {
     data['url'] = url;
     data['banner'] = banner;
     data['files'] = files;
+    data['payload_files'] = payloadFiles;
     return data;
   }
 }

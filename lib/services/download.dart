@@ -1,19 +1,22 @@
 import 'dart:io';
+import 'dart:convert'; // Import for JSON decoding
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
 
-void downloadAndReplaceFilesWithProgress(
-  String baseUrl,
-  List<String> fileNames,
-  String targetDirectory,
-  Function(double) onProgressUpdate,
-) async {
+void downloadAndReplaceFilesWithProgress({
+  required String baseUrl,
+  required List<String> fileNames,
+  List<String>? otherFileNames,
+  required String targetDirectory,
+  String? otherTargetDirectory,
+  required Function(double) onProgressUpdate,
+}) async {
   Dio dio = Dio();
-
-  for (String fileName in fileNames) {
+  // Function to download and replace files
+  Future<void> downloadAndReplaceFile(
+      String fileName, String destinationPath) async {
     String fileUrl = '$baseUrl/$fileName';
     String savePath = path.join(Directory.systemTemp.path, fileName);
-    String destinationPath = path.join(targetDirectory, fileName);
 
     try {
       // Start downloading the file
@@ -46,6 +49,20 @@ void downloadAndReplaceFilesWithProgress(
       print("Error downloading or replacing $fileName: $e");
     }
     onProgressUpdate(0);
+  }
+
+  // Download and replace main files
+  for (String fileName in fileNames) {
+    String destinationPath = path.join(targetDirectory, fileName);
+    await downloadAndReplaceFile(fileName, destinationPath);
+  }
+
+  // Download and replace other files if any
+  if (otherFileNames != null && otherTargetDirectory != null) {
+    for (String fileName in otherFileNames) {
+      String destinationPath = path.join(otherTargetDirectory, fileName);
+      await downloadAndReplaceFile(fileName, destinationPath);
+    }
   }
 }
 
@@ -92,18 +109,69 @@ Future<String?> findGameFolder() async {
   return null;
 }
 
-  Future<void> downloadAndUpdate(String url) async {
-    var tempDir = Directory.systemTemp;
-    var filePath = '${tempDir.path}\\FFBE_Patcher_Update.exe';
+Future<String?> findCpkFolder(String gameName) async {
+  // Get the user's AppData\Roaming directory
+  final appDataPath = Directory(Platform.environment['APPDATA'] ?? '');
+  if (!appDataPath.existsSync()) {
+    print('AppData directory does not exist');
+    return null;
+  }
 
-    try {
-      Response response = await Dio().download(url, filePath);
-      if (response.statusCode == 200) {
-        await Process.start('cmd.exe', ['/c', filePath]);
-        exit(0);
+  // Define the base path: AndApp\Apps
+  final appsPath = path.join(appDataPath.path, 'AndApp', 'Apps');
+  final appsDir = Directory(appsPath);
+
+  if (!appsDir.existsSync()) {
+    print('Apps directory does not exist');
+    return null;
+  }
+
+  // Traverse through all subdirectories in Apps (numbered folders)
+  final appDirectories = appsDir.listSync().whereType<Directory>();
+
+  for (var dir in appDirectories) {
+    // Check if Payload\manifest.json exists
+    final payloadDir = Directory(path.join(dir.path, 'Payload'));
+    final manifestFile = File(path.join(payloadDir.path, 'manifest.json'));
+
+    if (await manifestFile.exists()) {
+      // Read manifest.json
+      try {
+        final manifestContent = await manifestFile.readAsString();
+        final manifestJson = json.decode(manifestContent);
+
+        if (manifestJson['entryPointBaseName'] == gameName) {
+          // Found the game folder
+          final cpkDir = Directory(path.join(payloadDir.path, 'cpk'));
+
+          if (await cpkDir.exists()) {
+            print("cpk folder found: ${cpkDir.path}");
+            return cpkDir.path;
+          } else {
+            print("cpk folder does not exist in ${payloadDir.path}");
+            return null;
+          }
+        }
+      } catch (e) {
+        print("Error reading manifest.json in ${payloadDir.path}: $e");
       }
-    } 
-    catch (e) {
-      print('Error updating: $e');
     }
   }
+  print("Game folder not found.");
+  return null;
+}
+
+Future<void> downloadAndUpdate(String url) async {
+  var tempDir = Directory.systemTemp;
+  var filePath = path.join(tempDir.path, 'FFBE_Patcher_Update.exe');
+
+  try {
+    Response response = await Dio().download(url, filePath);
+    if (response.statusCode == 200) {
+      await Process.start('cmd.exe', ['/c', filePath]);
+      exit(0);
+    }
+  } catch (e) {
+    print('Error updating: $e');
+  }
+}
