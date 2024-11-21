@@ -3,48 +3,56 @@ import 'dart:convert'; // Import for JSON decoding
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
 
-void downloadAndReplaceFilesWithProgress({
+Future<void> downloadAndReplaceFilesWithProgress({
   required String baseUrl,
   required List<String> fileNames,
   List<String>? otherFileNames,
   required String targetDirectory,
   String? otherTargetDirectory,
   required Function(double) onProgressUpdate,
+  required Function(String) onMessageUpdate,
 }) async {
   Dio dio = Dio();
+
   // Function to download and replace files
   Future<void> downloadAndReplaceFile(
       String fileName, String destinationPath) async {
     String fileUrl = '$baseUrl/$fileName';
-    String savePath = path.join(Directory.systemTemp.path, fileName);
+    String tempDir = Directory.systemTemp.path;
+    String savePath = path.join(tempDir, fileName);
+    String backupPath = path.join(tempDir, 'backup_$fileName');
 
     try {
-      // Start downloading the file
-      Response response = await dio.download(fileUrl, savePath,
-          onReceiveProgress: (received, total) {
-        if (total != -1) {
-          double progress = received / total;
-          onProgressUpdate(progress);
-        }
-      });
+      // Check if file already exists in the target directory
+      File targetFile = File(destinationPath);
 
-      if (response.statusCode == 200) {
-        print("Download of $fileName complete!");
-
-        // Check if file already exists in the target directory
-        File targetFile = File(destinationPath);
-
-        if (await targetFile.exists()) {
-          // If file exists, delete it first
-          await targetFile.delete();
-          print("Existing file $fileName deleted.");
-        }
-
-        // Move the newly downloaded file to the target directory
-        File downloadedFile = File(savePath);
-        await downloadedFile.rename(destinationPath);
-        print("File $fileName moved to: $destinationPath");
+      if (await targetFile.exists()) {
+        // Backup the existing file
+        onMessageUpdate('Backing up $fileName...');
+        await targetFile.copy(backupPath);
+        print("Existing file $fileName backed up to $backupPath.");
       }
+
+      // Start downloading the file
+      onMessageUpdate('Downloading $fileName...');
+      await dio.download(
+        fileUrl,
+        savePath,
+        onReceiveProgress: (received, total) {
+          if (total != -1) {
+            double progress = received / total;
+            onProgressUpdate(progress);
+          }
+        },
+      );
+
+      print("Download of $fileName complete!");
+
+      // Replace the old file with the new one
+      onMessageUpdate('Replacing $fileName...');
+      File downloadedFile = File(savePath);
+      await downloadedFile.rename(destinationPath);
+      print("File $fileName moved to: $destinationPath.");
     } catch (e) {
       print("Error downloading or replacing $fileName: $e");
     }
@@ -53,15 +61,15 @@ void downloadAndReplaceFilesWithProgress({
 
   // Download and replace main files
   for (String fileName in fileNames) {
-    String destinationPath = path.join(targetDirectory, fileName);
-    await downloadAndReplaceFile(fileName, destinationPath);
+    await downloadAndReplaceFile(
+        fileName, path.join(targetDirectory, fileName));
   }
 
   // Download and replace other files if any
   if (otherFileNames != null && otherTargetDirectory != null) {
     for (String fileName in otherFileNames) {
-      String destinationPath = path.join(otherTargetDirectory, fileName);
-      await downloadAndReplaceFile(fileName, destinationPath);
+      await downloadAndReplaceFile(
+          fileName, path.join(otherTargetDirectory, fileName));
     }
   }
 }
