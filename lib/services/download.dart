@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert'; // Import for JSON decoding
 import 'package:dio/dio.dart';
 import 'package:path/path.dart' as path;
+import 'package:intl/intl.dart'; // For date formatting
 
 Future<void> downloadAndReplaceFilesWithProgress({
   required String baseUrl,
@@ -14,23 +15,47 @@ Future<void> downloadAndReplaceFilesWithProgress({
 }) async {
   Dio dio = Dio();
 
+  // Generate backup folder name with current date and time
+  String timestamp =
+      DateFormat("yyyy-MM-dd 'at' HH-mm-ss").format(DateTime.now());
+  String backupFolderPath = path.join(
+    Directory.systemTemp.path,
+    'ffbe_patcher_backups',
+    timestamp,
+  );
+
+  // Ensure the backup directory exists
+  Directory backupDir = Directory(backupFolderPath);
+  if (!await backupDir.exists()) {
+    await backupDir.create(recursive: true);
+  }
+
+  // Create a list to store original file paths
+  List<Map<String, String>> originalFilePaths = [];
+
   // Function to download and replace files
   Future<void> downloadAndReplaceFile(
       String fileName, String destinationPath) async {
     String fileUrl = '$baseUrl/$fileName';
     String tempDir = Directory.systemTemp.path;
     String savePath = path.join(tempDir, fileName);
-    String backupPath = path.join(tempDir, 'backup_$fileName');
 
     try {
       // Check if file already exists in the target directory
       File targetFile = File(destinationPath);
 
       if (await targetFile.exists()) {
-        // Backup the existing file
+        // Move the existing file to the backup folder
         onMessageUpdate('Backing up $fileName...');
-        await targetFile.copy(backupPath);
-        print("Existing file $fileName backed up to $backupPath.");
+        String backupFilePath = path.join(backupFolderPath, fileName);
+        await targetFile.rename(backupFilePath);
+        print("Existing file $fileName moved to $backupFilePath.");
+
+        // Save the original file path
+        originalFilePaths.add({
+          'fileName': fileName,
+          'originalPath': destinationPath,
+        });
       }
 
       // Start downloading the file
@@ -48,7 +73,7 @@ Future<void> downloadAndReplaceFilesWithProgress({
 
       print("Download of $fileName complete!");
 
-      // Replace the old file with the new one
+      // Move the newly downloaded file to the target directory
       onMessageUpdate('Replacing $fileName...');
       File downloadedFile = File(savePath);
       await downloadedFile.rename(destinationPath);
@@ -72,6 +97,11 @@ Future<void> downloadAndReplaceFilesWithProgress({
           fileName, path.join(otherTargetDirectory, fileName));
     }
   }
+
+  // After all files are processed, save the paths to a JSON file
+  String jsonFilePath = path.join(backupFolderPath, 'paths.json');
+  File jsonFile = File(jsonFilePath);
+  await jsonFile.writeAsString(jsonEncode(originalFilePaths));
 }
 
 Future<String?> findGameFolder() async {

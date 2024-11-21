@@ -2,6 +2,7 @@
 
 import 'package:ffbe_patcher/constants/strings.dart';
 import 'package:ffbe_patcher/models/Data.dart';
+import 'package:ffbe_patcher/screens/backup_screen.dart';
 import 'package:ffbe_patcher/services/download.dart';
 import 'package:ffbe_patcher/services/network.dart';
 import 'package:flutter/material.dart';
@@ -144,9 +145,19 @@ class _MainScreenState extends State<MainScreen> {
           "FFBE Patcher",
           style: TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: const Color.fromARGB(255, 67, 2, 92),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => BackupScreen()),
+              );
+            },
+            icon: const Icon(Icons.backup),
+            tooltip: "Backups",
+          ),
           IconButton(
             onPressed: () {
               getData();
